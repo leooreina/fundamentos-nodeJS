@@ -12,11 +12,6 @@ interface TransactionDTO {
   type: 'income' | 'outcome';
 }
 
-interface CreateTransactionDTO {
-  transaction: TransactionDTO;
-  balance: Balance;
-}
-
 class TransactionsRepository {
   private transactions: Transaction[];
 
@@ -32,24 +27,31 @@ class TransactionsRepository {
   }
 
   public getBalance(): Balance {
-    const incomes = this.transactions.filter(
-      transaction => transaction.type === 'income',
-    );
-    const outcomes = this.transactions.filter(
-      transaction => transaction.type === 'outcome',
-    );
+    const incomes = this.transactions
+      .filter(transaction => transaction.type === 'income')
+      .reduce((prevValue, { value }) => prevValue + value, 0);
+
+    const outcomes = this.transactions
+      .filter(transaction => transaction.type === 'outcome')
+      .reduce((prevValue, { value }) => prevValue + value, 0);
+
+    this.balance = {
+      income: incomes,
+      outcome: outcomes,
+      total: incomes - outcomes,
+    };
+
+    return this.balance;
   }
 
-  public create({ transaction, balance }: CreateTransactionDTO): Transaction {
+  public create({ title, value, type }: TransactionDTO): Transaction {
     const transactionToCreate = new Transaction({
-      title: transaction.title,
-      value: transaction.value,
-      type: transaction.type,
+      title,
+      value,
+      type,
     });
-
     this.transactions.push(transactionToCreate);
-    this.balance = balance;
-
+    this.balance = this.getBalance();
     return transactionToCreate;
   }
 }
